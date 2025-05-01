@@ -1,16 +1,56 @@
-name: CI
+name: CI & Deploy
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
 
 jobs:
-  build_and_test:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - run: cargo sqlx prepare -- --migrations-path migrations
-      - run: cargo fmt -- --check
-      - run: cargo clippy -- -D warnings
-      - run: cargo test
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+
+    - name: Install sqlx-cli
+      run: cargo install sqlx-cli --no-default-features --features sqlite
+
+    - name: Set up environment
+      run: |
+        echo "DATABASE_URL=sqlite://./data/app.db" >> $GITHUB_ENV
+        mkdir -p data
+
+    - name: Run migrations
+      run: |
+        sqlx database create
+        sqlx migrate run
+
+    - name: Build
+      run: cargo build --release
+
+    - name: Deploy to GCE
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ secrets.GCE_HOST }}
+        username: ${{ secrets.GCE_USER }}
+        key: ${{ secrets.GCE_SSH_PRIVATE_KEY }}
+        port: 22
+        source: "./target/release/fsspx-website"
+        target: "/home/${{ secrets.GCE_USER }}/app"
+
+    - name: Restart app on GCE
+      uses: appleboy/ssh-action@v0.1.10
+      with:
+        host: ${{ secrets.GCE_HOST }}
+        username: ${{ secrets.GCE_USER }}
+        key: ${{ secrets.GCE_SSH_PRIVATE_KEY }}
+        port: 22
+        script: |
+          pkill fsspx-website || true
+          nohup /home/${{ secrets.GCE_USER }}/app/fsspx-website > app.log 2>&1 &
