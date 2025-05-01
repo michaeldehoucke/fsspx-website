@@ -1,4 +1,3 @@
-use axum::{extract::State, response::Html, routing::get, Router};
 use askama::Template;
 use sqlx::SqlitePool;
 use crate::models::User;
@@ -9,20 +8,12 @@ struct IndexTemplate {
     users: Vec<User>,
 }
 
-pub fn app_router(db: SqlitePool) -> Router {
-    Router::new()
-        .route("/", get(index_handler))
-        .with_state(db)
-}
-
-async fn index_handler(State(db): State<SqlitePool>) -> Html<String> {
+pub async fn index_handler(pool: SqlitePool) -> impl warp::Reply {
     let users = sqlx::query_as::<_, User>("SELECT * FROM users")
-        .fetch_all(&db)
+        .fetch_all(&pool)
         .await
         .unwrap_or_default();
 
-    let body = IndexTemplate { users }
-        .render()
-        .unwrap_or_else(|e| format!("Template error: {}", e));
-    Html(body)
+    let template = IndexTemplate { users };
+    warp::reply::html(template.render().unwrap_or_else(|e| format!("Template error: {}", e)))
 }

@@ -1,8 +1,9 @@
--- up
 CREATE TABLE IF NOT EXISTS users (
-    id   INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL
 );
 
--- down
-DROP TABLE IF EXISTS users;
+INSERT INTO users (name) VALUES
+('Alice'),
+('Bob'),
+('Charlie');
