@@ -2,6 +2,7 @@ use dotenvy::dotenv;
 use sqlx::SqlitePool;
 use std::env;
 use warp::Filter;
+use std::net::SocketAddr;
 
 mod handlers;
 mod models;
@@ -26,15 +27,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let host = env::var("HOST").unwrap_or_else(|_| "0.0.0.0".into());
     let port: u16 = env::var("PORT")
         .unwrap_or_else(|_| "80".into())  // Default to 80 if PORT is not set
-        .parse()?;
+        .parse()
+        .expect("Failed to parse PORT environment variable");
 
     // Format the address to bind the server
     let addr = format!("{}:{}", host, port);
 
     println!("Server running at http://{}", addr);
 
+    // Ensure that addr can be parsed into a SocketAddr
+    let socket_addr: SocketAddr = addr
+        .parse()
+        .map_err(|e| format!("Failed to parse address {}: {}", addr, e))?;
+
     // Bind to the desired address and port
-    warp::serve(index).run(addr.parse()?).await;
+    warp::serve(index).run(socket_addr).await;
 
     Ok(())
 }
