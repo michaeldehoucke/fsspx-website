@@ -18,8 +18,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .and(pool_filter.clone())
         .and_then(|pool| async move { Ok::<_, std::convert::Infallible>(handlers::index_handler(pool).await) });
 
-    let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".into());
-    let port: u16 = env::var("PORT").unwrap_or_else(|_| "8080".into()).parse()?;
+    let host = env::var("HOST").unwrap_or_else(|_| "0.0.0.0".into());
+    let port: u16 = env::var("PORT").unwrap_or_else(|_| "80".into()).parse()?;
     let addr = format!("{}:{}", host, port);
 
     println!("Server running at http://{}", addr);

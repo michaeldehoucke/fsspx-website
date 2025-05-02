@@ -14,12 +14,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Debug SSH Key
-      run: |
-        echo "${{ secrets.GCE_SSH_PRIVATE_KEY }}" > key.pem
-        chmod 600 key.pem
-        ssh -i key.pem -o StrictHostKeyChecking=no ${{ secrets.GCE_USER }}@${{ secrets.GCE_HOST }} "echo 'SSH OK'"
-
     - name: Set up Rust
       uses: actions-rs/toolchain@v1
       with:
